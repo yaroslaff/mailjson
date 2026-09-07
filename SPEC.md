@@ -59,7 +59,9 @@ Rule: **instance is the first component, daemon is the last**. Anything in betwe
   "host": "projectmayhem",
   "instance": "postfix",
   "from": "newsletter@example.com",
+  "fdomain": "example.com",
   "recipients": ["walter@example.org"],
+  "rdomains": ["example.org"],
   "delivery": { "walter@example.org": "sent" },
   "status": "sent",
   "first_seen": "2026-09-06T12:29:38.885813+02:00",
@@ -74,7 +76,9 @@ Rule: **instance is the first component, daemon is the last**. Anything in betwe
 | `host` | host from the syslog header |
 | `instance` | postfix instance — `mx` runs two, each with its own queue ids |
 | `from` | envelope sender; empty (`<>`) for bounces |
+| `fdomain` | the sender's domain, lowercased. A string, not a list: there is only ever one sender |
 | `recipients` | **a plain list of strings** — greppable and countable without unpacking structures |
+| `rdomains` | the recipients' domains, lowercased and deduplicated: two addresses at gmail.com leave one entry. A local recipient with no domain (`to=<root>`) adds nothing |
 | `delivery` | map of address to outcome. The value is always a string. The last outcome wins: `deferred` then `sent` leaves `sent` |
 | `status` | worst-of summary: `bounced` > `deferred` > `sent`. `sent` only if every recipient got it. `unknown` when no outcome is visible |
 | `first_seen` | time of the first line carrying this queue id |
@@ -160,6 +164,6 @@ cat mail.log | mailjson -                             # stdin
 
 **Stage 1 — the engine (done).** `pyproject.toml`, the package, the CLI, tests. Three rules in the config: message appeared (`pickup`, `smtpd client=`) and message gone (`qmgr: removed`). Output carried `queue_id`, `host`, `instance`, `first_seen`, `last_seen`, `closed`.
 
-**Stage 2 — the fields (done).** Four more rules bring `from`, `message_id`, `recipients`/`delivery`/`status` and `queued_as`.
+**Stage 2 — the fields (done).** Four more rules bring `from`/`fdomain`, `message_id`, `recipients`/`rdomains`/`delivery`/`status` and `queued_as`.
 
 Stage 2 did change the engine once, in the one way stage 1 had not settled: a line is now offered to every rule instead of only the first one that matches. Under first-match-wins, `to=<...> status=sent (... queued as ...)` would have forced delivery and handover into a single regex, and every later field on a shared line would have meant editing an existing rule instead of adding one. The rest of the engine was untouched.

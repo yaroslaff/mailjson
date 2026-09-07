@@ -27,31 +27,47 @@ def worst(statuses: Iterable[str]) -> str:
     return max(statuses, key=lambda status: STATUS_RANK.get(status, UNKNOWN_STATUS_RANK))
 
 
+def domain_of(address: str) -> str:
+    """The part after the last `@`, lowercased. Empty for `<>` and for bare local names."""
+    _, at, domain = address.rpartition("@")
+    return domain.lower() if at else ""
+
+
+def set_sender(record: dict, groups: Groups) -> None:
+    record["from"] = groups["from"]
+    record["fdomain"] = domain_of(groups["from"])
+
+
 def add_recipient(record: dict, groups: Groups) -> None:
     """Record one delivery attempt.
 
     The address is listed once however many attempts it takes, and the latest
     outcome wins: a recipient that was deferred and then delivered reads `sent`.
+    Its domain joins `rdomains`, deduplicated: two addresses at gmail.com leave
+    one entry there.
     """
     address = groups["to"]
     if address not in record["delivery"]:
         record["recipients"].append(address)
+        domain = domain_of(address)
+        if domain and domain not in record["rdomains"]:
+            record["rdomains"].append(domain)
     record["delivery"][address] = groups["status"]
     record["status"] = worst(record["delivery"].values())
 
 
 def new_record() -> dict:
     """The fields a record starts with, before any rule has fired."""
-    return {"status": "unknown", "recipients": [], "delivery": {}}
+    return {"status": "unknown", "recipients": [], "rdomains": [], "delivery": {}}
 
 
 RULES = [
     # A message appears: handed over locally by sendmail(1), or accepted over SMTP.
-    Rule(name="pickup", daemon="pickup", pattern=r"^uid=\d+ from=<(?P<from>[^>]*)>"),
+    Rule(name="pickup", daemon="pickup", pattern=r"^uid=\d+ from=<(?P<from>[^>]*)>", apply=set_sender),
     Rule(name="accepted", daemon="smtpd", pattern=r"^client="),
     Rule(name="message_id", daemon="cleanup", pattern=r"^message-id=<(?P<message_id>[^>]*)>"),
     # The envelope sender, repeated on every queue run; empty for bounces.
-    Rule(name="sender", daemon="qmgr", pattern=r"^from=<(?P<from>[^>]*)>, size="),
+    Rule(name="sender", daemon="qmgr", pattern=r"^from=<(?P<from>[^>]*)>, size=", apply=set_sender),
     # One delivery attempt. Any of smtp, local, virtual, pipe and discard makes them.
     Rule(
         name="delivery",

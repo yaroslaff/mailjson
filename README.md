@@ -7,9 +7,9 @@ $ mailjson /var/log/mail.log | head -1
 {"queue_id": "D8381A3220", "host": "projectmayhem", "instance": "postfix",
  "first_seen": "2026-09-06T12:29:38.885813+02:00",
  "last_seen": "2026-09-06T12:29:40.979259+02:00",
- "from": "newsletter@example.com",
+ "from": "newsletter@example.com", "fdomain": "example.com",
  "message_id": "A1B2C3D4E5@example.com",
- "recipients": ["walter@example.org"],
+ "recipients": ["walter@example.org"], "rdomains": ["example.org"],
  "delivery": {"walter@example.org": "sent"},
  "status": "sent", "closed": true}
 ```
@@ -38,6 +38,8 @@ cat mail.log | mailjson -                             # stdin
 - Output order follows the moment a message left the queue, not the moment it arrived.
   Messages that never closed — still queued, or cut off at the end of the log — come
   last, marked `"closed": false`.
+- `fdomain` and `rdomains` are the domains of the sender and of the recipients, lowercased;
+  `rdomains` is deduplicated, so counting mail by destination domain needs no parsing.
 - `status` is the worst outcome among the recipients: `sent` only when every one of
   them got it, otherwise `deferred` or `bounced`. `unknown` means no delivery attempt
   was logged — normally a message still sitting in the queue.

@@ -67,8 +67,10 @@ def test_a_delivered_message():
         "last_seen": "2026-09-06T12:29:40.979259+02:00",
         "status": "sent",
         "recipients": ["walter@example.org"],
+        "rdomains": ["example.org"],
         "delivery": {"walter@example.org": "sent"},
         "from": "newsletter@example.com",
+        "fdomain": "example.com",
         "message_id": "A1B2C3D4E5@example.com",
         "closed": True,
     }
@@ -84,6 +86,7 @@ def test_a_bounced_message():
 def test_two_recipients_take_the_worst_outcome():
     (record,) = run(TWO_RECIPIENTS)
     assert record["recipients"] == ["info@example.net", "vacation@autoreply.example.net"]
+    assert record["rdomains"] == ["example.net", "autoreply.example.net"]
     assert record["delivery"] == {"info@example.net": "sent", "vacation@autoreply.example.net": "deferred"}
     assert record["status"] == "deferred"
 
@@ -105,10 +108,28 @@ def test_an_ordinary_message_has_no_queued_as():
     assert "queued_as" not in record
 
 
+DOMAIN_CASES = """\
+Sep  6 01:04:31 mx postfix/qmgr[2666]: A53E66054A: from=<Sales@Example.COM>, size=999, nrcpt=3 (queue active)
+Sep  6 01:04:32 mx postfix/smtp[13704]: A53E66054A: to=<one@Gmail.com>, relay=x, dsn=2.0.0, status=sent (250 ok)
+Sep  6 01:04:33 mx postfix/smtp[13704]: A53E66054A: to=<two@gmail.com>, relay=x, dsn=2.0.0, status=sent (250 ok)
+Sep  6 01:04:34 mx postfix/local[13950]: A53E66054A: to=<root>, relay=local, dsn=2.0.0, status=sent (delivered to mailbox)
+Sep  6 01:04:35 mx postfix/qmgr[2666]: A53E66054A: removed
+"""
+
+
+def test_domains_are_lowercased_and_deduplicated():
+    (record,) = run(DOMAIN_CASES)
+    assert record["fdomain"] == "example.com"
+    # three recipients, two of them at the same domain, one with no domain at all
+    assert len(record["recipients"]) == 3
+    assert record["rdomains"] == ["gmail.com"]
+
+
 def test_an_empty_sender_stays_empty():
     lines = "Sep  6 00:20:13 mx postfix-ases/qmgr[2670]: 515A560CB0: from=<>, size=33133, nrcpt=1 (queue active)\n"
     (record,) = run(lines)
     assert record["from"] == ""
+    assert record["fdomain"] == ""
 
 
 @pytest.mark.parametrize(

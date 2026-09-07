@@ -99,8 +99,10 @@ class TestEngine:
             "first_seen": "2026-09-06T12:29:38.885813+02:00",
             "last_seen": "2026-09-06T12:29:40.979259+02:00",
             "from": "newsletter@example.com",
+            "fdomain": "example.com",
             "status": "unknown",  # no delivery attempt was logged
             "recipients": [],
+            "rdomains": [],
             "delivery": {},
             "closed": True,
         }
