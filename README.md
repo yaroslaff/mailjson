@@ -21,7 +21,7 @@ can be fed to the same command.
 ## Install
 
 ```console
-pipx install .
+pipx install git+https://github.com/yaroslaff/mailjson.git
 ```
 
 ## Usage

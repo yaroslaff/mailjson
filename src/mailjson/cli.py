@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 
+from . import __version__
 from .config import QUEUE_ID_RE, RULES, new_record
 from .engine import read_records
 
@@ -20,6 +21,11 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         metavar="FILE",
         help="log files, oldest first; plain or .gz; '-' reads stdin",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "-l",

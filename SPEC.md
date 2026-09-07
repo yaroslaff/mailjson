@@ -156,7 +156,7 @@ cat mail.log | mailjson -                             # stdin
 
 - Several files are read **as one stream**, in argument order (oldest first) — messages torn apart by rotation stitch themselves back together.
 - `.gz` is recognised by extension.
-- Install: `pipx install .`
+- Install: `pipx install git+https://github.com/yaroslaff/mailjson.git`
 
 ---
 

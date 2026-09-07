@@ -9,6 +9,11 @@ description = "Turn a Postfix mail.log into JSON records, one per message"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = "https://github.com/yaroslaff/mailjson"
+Repository = "https://github.com/yaroslaff/mailjson"
 
 [project.scripts]
 mailjson = "mailjson.cli:main"

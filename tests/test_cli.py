@@ -24,6 +24,13 @@ def log(tmp_path):
     return str(path)
 
 
+def test_reports_its_version(capsys):
+    with pytest.raises(SystemExit) as exit_code:
+        main(["--version"])
+    assert exit_code.value.code == 0
+    assert capsys.readouterr().out.startswith("mailjson ")
+
+
 def test_writes_jsonl(log, capsys):
     assert main([log]) == 0
     records = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
