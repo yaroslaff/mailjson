@@ -80,7 +80,8 @@ Rule: **instance is the first component, daemon is the last**. Anything in betwe
 | `first_seen` | time of the first line carrying this queue id |
 | `last_seen` | time of the last line |
 | `closed` | whether `qmgr: removed` was reached |
-| `queued_as` | present only for messages handed to another instance (see §5) |
+| `message_id` | the Message-ID header, as logged by `cleanup`; absent for messages that never passed through it |
+| `queued_as` | present only for messages handed to another queue (see §5) |
 
 ---
 
@@ -90,9 +91,9 @@ Streaming, single pass, never holds the log in memory.
 
 1. A line is parsed by the header regex into time, host, instance, daemon, body.
 2. The queue id is taken from the body: `^(?P<qid>[0-9A-F]{6,18}): (?P<rest>.*)$`. No match, line silently skipped.
-3. The body is matched against the rules (§6). No rule matches, line skipped.
+3. The body is matched against the rules (§6). **Every** rule that matches is applied, not just the first — one line often carries two unrelated facts, and each gets its own small rule. Nothing matches, line skipped.
 4. A rule matched: the record for `(host, instance, queue_id)` is created if absent, then updated. `last_seen` always advances.
-5. The rule is marked `closes`: the record is emitted and dropped from memory.
+5. One of the matched rules is marked `closes`: the record is emitted and dropped from memory.
 6. At end of input, every remaining record is emitted with `closed: false`.
 
 **The record key is the triple `(host, instance, queue_id)`.** A queue id is unique only within an instance, and gets reused over time; since a closed record leaves memory, a later reappearance of the same id starts a new message.
@@ -135,6 +136,7 @@ Rule(
 ```
 
 - `pattern` is matched against the body **after** `queue_id: `.
+- Every matching rule fires. Two rules may therefore read one line — `status=sent (... queued as A53E66054A)` is both a delivery attempt and a handover — and neither has to know about the other. When two rules do write the same field, the later one in the list wins.
 - `apply(record, groups)` is an optional function for fields that accumulate (`recipients`, `delivery`). It is written in the same `config.py`.
 - A new field means a new rule. The engine does not change — which is exactly the test of whether configuration is separated from mechanics.
 
@@ -156,6 +158,8 @@ cat mail.log | mailjson -                             # stdin
 
 ## 8. Stages
 
-**Stage 1 — the engine.** `pyproject.toml`, the package, the CLI, tests. Two rules in the config: message appeared (`pickup`, `smtpd client=`) and message gone (`qmgr: removed`). Output carries `queue_id`, `host`, `instance`, `first_seen`, `last_seen`, `closed`.
+**Stage 1 — the engine (done).** `pyproject.toml`, the package, the CLI, tests. Three rules in the config: message appeared (`pickup`, `smtpd client=`) and message gone (`qmgr: removed`). Output carried `queue_id`, `host`, `instance`, `first_seen`, `last_seen`, `closed`.
 
-**Stage 2 — the fields.** Rules add `from`, `to`/`status`, `queued_as`, and the summary `status`. No engine changes.
+**Stage 2 — the fields (done).** Four more rules bring `from`, `message_id`, `recipients`/`delivery`/`status` and `queued_as`.
+
+Stage 2 did change the engine once, in the one way stage 1 had not settled: a line is now offered to every rule instead of only the first one that matches. Under first-match-wins, `to=<...> status=sent (... queued as ...)` would have forced delivery and handover into a single regex, and every later field on a shared line would have meant editing an existing rule instead of adding one. The rest of the engine was untouched.

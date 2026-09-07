@@ -144,21 +144,28 @@ class Engine:
         for rule in rules:
             self._by_daemon.setdefault(rule.daemon, []).append(rule)
         self._any_daemon = self._by_daemon.get(None, [])
+        self._cache: dict[str, list[Rule]] = {}
         self._open: dict[tuple[str, str, str], dict] = {}
 
+    def _rules_for(self, daemon: str) -> list[Rule]:
+        rules = self._cache.get(daemon)
+        if rules is None:
+            rules = self._cache[daemon] = self._by_daemon.get(daemon, []) + self._any_daemon
+        return rules
+
     def feed(self, event: Event) -> dict | None:
-        """Apply one event; returns the record if this event closed a message."""
-        for rule in self._by_daemon.get(event.daemon, ()):
-            match = rule.regex.search(event.body)
-            if match is not None:
-                break
-        else:
-            for rule in self._any_daemon:
-                match = rule.regex.search(event.body)
-                if match is not None:
-                    break
-            else:
-                return None
+        """Apply one event; returns the record if this event closed a message.
+
+        Every rule that matches is applied, not just the first one, so a line
+        carrying two independent facts is covered by two independent rules.
+        """
+        matches = [
+            (rule, match)
+            for rule in self._rules_for(event.daemon)
+            if (match := rule.regex.search(event.body)) is not None
+        ]
+        if not matches:
+            return None
 
         key = (event.host, event.instance, event.queue_id)
         record = self._open.get(key)
@@ -173,13 +180,14 @@ class Engine:
             self._open[key] = record
         record["last_seen"] = event.time.isoformat()
 
-        groups = match.groupdict()
-        if rule.apply is not None:
-            rule.apply(record, groups)
-        else:
-            record.update({k: v for k, v in groups.items() if v is not None})
+        for rule, match in matches:
+            groups = match.groupdict()
+            if rule.apply is not None:
+                rule.apply(record, groups)
+            else:
+                record.update({k: v for k, v in groups.items() if v is not None})
 
-        if rule.closes:
+        if any(rule.closes for rule, _ in matches):
             del self._open[key]
             record["closed"] = True
             return record

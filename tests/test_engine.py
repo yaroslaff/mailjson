@@ -98,6 +98,10 @@ class TestEngine:
             "instance": "postfix",
             "first_seen": "2026-09-06T12:29:38.885813+02:00",
             "last_seen": "2026-09-06T12:29:40.979259+02:00",
+            "from": "newsletter@example.com",
+            "status": "unknown",  # no delivery attempt was logged
+            "recipients": [],
+            "delivery": {},
             "closed": True,
         }
         assert list(engine.flush()) == []
@@ -142,6 +146,17 @@ class TestEngine:
         engine.feed(parse(ISO_LINE, years))
         (record,) = list(engine.flush())
         assert "extra" not in record
+
+    def test_every_matching_rule_is_applied(self, years):
+        rules = [
+            Rule(name="uid", daemon="pickup", pattern=r"uid=(?P<uid>\d+)"),
+            Rule(name="from", daemon="pickup", pattern=r"from=<(?P<from>[^>]*)>"),
+        ]
+        engine = Engine(rules, new_record)
+        engine.feed(parse(ISO_LINE, years))
+        (record,) = list(engine.flush())
+        assert record["uid"] == "0"
+        assert record["from"] == "newsletter@example.com"
 
     def test_apply_replaces_the_default_assignment(self, years):
         def collect(record, groups):
