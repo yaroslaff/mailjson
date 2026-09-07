@@ -3,4 +3,4 @@
 from .engine import Engine, Event, Rule, read_records
 
 __all__ = ["Engine", "Event", "Rule", "read_records"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

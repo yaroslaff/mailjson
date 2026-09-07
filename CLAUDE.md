@@ -17,6 +17,13 @@ first — it carries the design decisions and the reasoning behind them.
 the output must mean adding a `Rule`, never touching the engine. If a change seems to
 require both, that is the signal to stop and reconsider the shape of `Rule`.
 
+## Releasing
+
+`__version__` in `src/mailjson/__init__.py` is the single source of truth — `pyproject.toml`
+reads it through `[tool.hatch.version]`. **Bump it in every commit that gets pushed**, or
+`pipx upgrade mailjson` sees the same version and does nothing. Patch level for a fix, minor
+for a new field or flag.
+
 ## Working here
 
 - Simplicity is the point. Prefer the boring version; a feature that needs a flag to stay

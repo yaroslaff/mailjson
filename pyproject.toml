@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mailjson"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Turn a Postfix mail.log into JSON records, one per message"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,9 @@ mailjson = "mailjson.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+
+[tool.hatch.version]
+path = "src/mailjson/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mailjson"]
