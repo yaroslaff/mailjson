@@ -5,7 +5,7 @@ Turns a Postfix `mail.log` into JSON records: **one message, one record**.
 ```console
 $ mailjson /var/log/mail.log | head -1
 {"queue_id": "D8381A3220", "host": "projectmayhem", "instance": "postfix",
- "first_seen": "2026-09-06T12:29:38.885813+02:00",
+ "first_seen": "2026-09-06T12:29:38.885813+02:00", "first_seen_int": 20260906,
  "last_seen": "2026-09-06T12:29:40.979259+02:00",
  "from": "newsletter@example.com", "fdomain": "example.com",
  "message_id": "A1B2C3D4E5@example.com",
@@ -38,6 +38,8 @@ cat mail.log | mailjson -                             # stdin
 - Output order follows the moment a message left the queue, not the moment it arrived.
   Messages that never closed — still queued, or cut off at the end of the log — come
   last, marked `"closed": false`.
+- `first_seen_int` is the day a message appeared as a plain integer (`20260906`), so
+  records can be bucketed or filtered by date without parsing anything.
 - `fdomain` and `rdomains` are the domains of the sender and of the recipients, lowercased;
   `rdomains` is deduplicated, so counting mail by destination domain needs no parsing.
 - `status` is the worst outcome among the recipients: `sent` only when every one of

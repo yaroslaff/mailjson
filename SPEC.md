@@ -65,6 +65,7 @@ Rule: **instance is the first component, daemon is the last**. Anything in betwe
   "delivery": { "walter@example.org": "sent" },
   "status": "sent",
   "first_seen": "2026-09-06T12:29:38.885813+02:00",
+  "first_seen_int": 20260906,
   "last_seen": "2026-09-06T12:29:40.979259+02:00",
   "closed": true
 }
@@ -82,6 +83,7 @@ Rule: **instance is the first component, daemon is the last**. Anything in betwe
 | `delivery` | map of address to outcome. The value is always a string. The last outcome wins: `deferred` then `sent` leaves `sent` |
 | `status` | worst-of summary: `bounced` > `deferred` > `sent`. `sent` only if every recipient got it. `unknown` when no outcome is visible |
 | `first_seen` | time of the first line carrying this queue id |
+| `first_seen_int` | the same day as an integer, `YYYYMMDD` — a number to group or filter by without parsing a timestamp |
 | `last_seen` | time of the last line |
 | `closed` | whether `qmgr: removed` was reached |
 | `message_id` | the Message-ID header, as logged by `cleanup`; absent for messages that never passed through it |

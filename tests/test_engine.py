@@ -97,6 +97,7 @@ class TestEngine:
             "host": "projectmayhem",
             "instance": "postfix",
             "first_seen": "2026-09-06T12:29:38.885813+02:00",
+            "first_seen_int": 20260906,
             "last_seen": "2026-09-06T12:29:40.979259+02:00",
             "from": "newsletter@example.com",
             "fdomain": "example.com",
@@ -107,6 +108,13 @@ class TestEngine:
             "closed": True,
         }
         assert list(engine.flush()) == []
+
+    def test_the_day_a_message_appeared_is_also_an_int(self, years):
+        engine = Engine(RULES, new_record)
+        engine.feed(parse(ISO_LINE, years))
+        (record,) = list(engine.flush())
+        assert record["first_seen_int"] == 20260906
+        assert record["first_seen"].startswith("2026-09-06")
 
     def test_flushes_what_never_closed(self, years):
         engine = Engine(RULES, new_record)

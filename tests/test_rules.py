@@ -64,6 +64,7 @@ def test_a_delivered_message():
         "host": "projectmayhem",
         "instance": "postfix",
         "first_seen": "2026-09-06T12:29:38.885813+02:00",
+        "first_seen_int": 20260906,
         "last_seen": "2026-09-06T12:29:40.979259+02:00",
         "status": "sent",
         "recipients": ["walter@example.org"],

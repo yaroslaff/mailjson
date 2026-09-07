@@ -175,6 +175,7 @@ class Engine:
                 "host": event.host,
                 "instance": event.instance,
                 "first_seen": event.time.isoformat(),
+                "first_seen_int": int(event.time.strftime("%Y%m%d")),
                 **self._new_record(),
             }
             self._open[key] = record
